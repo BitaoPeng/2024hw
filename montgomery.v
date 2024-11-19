@@ -103,12 +103,10 @@ always @(*) begin
         INIT_MULT_B0: next_state = WAIT_MULT_B0;
         WAIT_MULT_B0: begin
             if(adder_done)
-                // next_state = INIT_MULT_B1;
                 next_state = WAIT_MULT_B1;
             else 
                 next_state = WAIT_MULT_B0;
         end
-        // INIT_MULT_B1: next_state = WAIT_MULT_B1;
         WAIT_MULT_B1: begin
             if(adder_done)
                 next_state = INIT_MULT_M0;
@@ -118,12 +116,10 @@ always @(*) begin
         INIT_MULT_M0: next_state = WAIT_MULT_M0;
         WAIT_MULT_M0: begin
             if(adder_done)
-                    // next_state = INIT_MULT_M1;
                     next_state = WAIT_MULT_M1;
             else 
                 next_state = WAIT_MULT_M0;
         end
-        // INIT_MULT_M1: next_state = WAIT_MULT_M1;
         WAIT_MULT_M1:begin
             if(adder_done)
                 next_state = ACCUMULATE;
@@ -133,12 +129,10 @@ always @(*) begin
         ACCUMULATE: begin
             adder_start = 0;
             if (A[i+1 -:2] != 0)
-                // next_state = INIT_ADDER;
                 next_state = WAIT_MULTIPLIER;
             else
                 next_state = CONDITIONAL_UPDATE;
         end
-        // INIT_ADDER: next_state = WAIT_MULTIPLIER;
         WAIT_MULTIPLIER: begin
             if(adder_done)
                 next_state = CONDITIONAL_UPDATE;
@@ -150,12 +144,10 @@ always @(*) begin
             if ((C[1:0] == 2'b01 && M[1:0] == 2'b01) || (C[1:0] == 2'b11 && M[1:0] == 2'b11)
              || (C[1:0] == 2'b10 && M[1:0] == 2'b01) || (C[1:0] == 2'b10 && M[1:0] == 2'b11)
              || (C[1:0] == 2'b11 && M[1:0] == 2'b01) || (C[1:0] == 2'b01 && M[1:0] == 2'b11))
-                // next_state = INIT_CONST_MULTIPLIER;
                 next_state = WAIT_CONST_MULTIPLIER;
             else
                 next_state = DIVIDE_BY_4;
         end
-        // INIT_CONST_MULTIPLIER:   next_state = WAIT_CONST_MULTIPLIER;
         WAIT_CONST_MULTIPLIER: begin 
             if(adder_done)
                 next_state = DIVIDE_BY_4;
@@ -164,27 +156,15 @@ always @(*) begin
         end
         DIVIDE_BY_4: begin
             adder_start = 0;
-            // next_state = CHECK_LOOP;
             if(i < n-3)
                 next_state = ACCUMULATE;
             else                
-                // next_state = NORMALIZE;
                 next_state = COMPARE;
         end
-        // CHECK_LOOP: begin
-        //     if(i < n-1)
-        //         next_state = ACCUMULATE;
-        //     else                
-        //         next_state = NORMALIZE;
-        // end
         COMPARE: begin 
             next_state = NORMALIZE;
         end
         NORMALIZE: begin
-            // if (C >= M)
-            //     next_state = WAIT_ADDER;
-            // else
-            //     next_state = DONE;
             if (adder_done) begin 
                 if (adder_result[1027] == 0)
                     next_state = WAIT_ADDER;
@@ -197,7 +177,6 @@ always @(*) begin
         end
         WAIT_ADDER: begin 
             if(adder_done)
-                // next_state = NORMALIZE;
                 next_state = COMPARE;
             else
                 next_state = WAIT_ADDER;
@@ -263,7 +242,6 @@ always @(posedge clk) begin
                     adder_start <= 1;
                 end
             end
-            // INIT_MULT_B1: adder_start <= 1;
             WAIT_MULT_B1: begin
                 adder_start <= 0;
                 if (adder_done)
@@ -285,7 +263,6 @@ always @(posedge clk) begin
                     adder_start <= 1;
                 end
             end
-            // INIT_MULT_M1: adder_start <= 1;
             WAIT_MULT_M1:begin
                 adder_start <= 0;
                 if (adder_done)
@@ -300,7 +277,6 @@ always @(posedge clk) begin
                 else if (A[i+1 -:2] == 2) adder_in_b <= twoB;
                 else if (A[i+1 -:2] == 3) adder_in_b <= threeB;
             end
-            // INIT_ADDER: adder_start <= 1;
             WAIT_MULTIPLIER: begin
                 adder_start <= 0;
                 if (adder_done)
@@ -319,7 +295,6 @@ always @(posedge clk) begin
                          else 
                              adder_in_b <= 0; 
             end
-            // INIT_CONST_MULTIPLIER: adder_start <= 1;
             WAIT_CONST_MULTIPLIER: begin 
                 adder_start <= 0;
                      if (adder_done)
@@ -339,12 +314,6 @@ always @(posedge clk) begin
                 adder_in_b <= M;
             end
             NORMALIZE: begin
-                // if (C >= M) begin 
-                //     adder_start <= 1;
-                //     subtract <= 1;
-                //     adder_in_a <= C;
-                //     adder_in_b <= M;
-                // end
                 adder_start <= 0;
                 if (adder_done) begin 
                     if (adder_result[1027] == 0) begin 
@@ -369,14 +338,7 @@ end
 
 // Output Logic
 assign result = (current_state == DONE)? C[1023:0] : 1024'b0;
-assign done = (current_state == DONE)? 1'b1 : 1'b0; // ?????????? if reg_Done needed?????
+assign done = (current_state == DONE)? 1'b1 : 1'b0; 
 
-//   reg [1023:0] r_result;
-//   always @(posedge(clk))
-//     r_result <= {1024{1'b1}};
-
-//   assign result = r_result;
-
-  
 
 endmodule
