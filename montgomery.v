@@ -70,9 +70,11 @@ localparam INIT_CONST_MULTIPLIER = 5'd14;
 localparam WAIT_CONST_MULTIPLIER = 5'd15;
 localparam DIVIDE_BY_4         = 5'd16;
 localparam CHECK_LOOP          = 5'd17;
-localparam NORMALIZE           = 5'd18;
-localparam WAIT_ADDER          = 5'd19;
-localparam DONE                = 5'd20;
+localparam COMPARE             = 5'd18;
+localparam NORMALIZE           = 5'd19;
+localparam WAIT_ADDER          = 5'd20;
+localparam DONE                = 5'd21;
+
 
 
 // State Register
@@ -166,7 +168,8 @@ always @(*) begin
             if(i < n-3)
                 next_state = ACCUMULATE;
             else                
-                next_state = NORMALIZE;
+                // next_state = NORMALIZE;
+                next_state = COMPARE;
         end
         // CHECK_LOOP: begin
         //     if(i < n-1)
@@ -174,15 +177,28 @@ always @(*) begin
         //     else                
         //         next_state = NORMALIZE;
         // end
+        COMPARE: begin 
+            next_state = NORMALIZE;
+        end
         NORMALIZE: begin
-            if (C >= M)
-                next_state = WAIT_ADDER;
+            // if (C >= M)
+            //     next_state = WAIT_ADDER;
+            // else
+            //     next_state = DONE;
+            if (adder_done) begin 
+                if (adder_result[1027] == 0)
+                    next_state = WAIT_ADDER;
+                else                     
+                    next_state = DONE;
+            end 
             else
-                next_state = DONE;
+                next_state = NORMALIZE;
+            
         end
         WAIT_ADDER: begin 
             if(adder_done)
-                next_state = NORMALIZE;
+                // next_state = NORMALIZE;
+                next_state = COMPARE;
             else
                 next_state = WAIT_ADDER;
         end
@@ -316,12 +332,27 @@ always @(posedge clk) begin
             CHECK_LOOP: begin 
 //                i <= i + 2;
             end
+            COMPARE: begin 
+                adder_start <= 1;
+                subtract <= 1;
+                adder_in_a <= C;
+                adder_in_b <= M;
+            end
             NORMALIZE: begin
-                if (C >= M) begin 
-                    adder_start <= 1;
-                    subtract <= 1;
-                    adder_in_a <= C[1026:0];
-                    adder_in_b <= M;
+                // if (C >= M) begin 
+                //     adder_start <= 1;
+                //     subtract <= 1;
+                //     adder_in_a <= C;
+                //     adder_in_b <= M;
+                // end
+                adder_start <= 0;
+                if (adder_done) begin 
+                    if (adder_result[1027] == 0) begin 
+                        adder_start <= 1;
+                        subtract <= 1;
+                        adder_in_a <= C;
+                        adder_in_b <= M;
+                    end
                 end
             end
             WAIT_ADDER: begin 
@@ -338,7 +369,7 @@ end
 
 // Output Logic
 assign result = (current_state == DONE)? C[1023:0] : 1024'b0;
-assign done = (current_state == DONE)? 1'b1 : 1'b0; 
+assign done = (current_state == DONE)? 1'b1 : 1'b0; // ?????????? if reg_Done needed?????
 
 //   reg [1023:0] r_result;
 //   always @(posedge(clk))
