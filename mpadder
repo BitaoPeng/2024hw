@@ -22,19 +22,19 @@ module mpadder(
             regB_Q <= 1027'd0;
         end
         else begin
-            regA_Q <= (muxA_sel == 0) ? in_a : {128'b0,regA_Q[1026:128]};
-            regB_Q <= (muxB_sel == 0) ? in_b : {128'b0,regB_Q[1026:128]};
+            regA_Q <= (muxA_sel == 0) ? in_a : {256'b0,regA_Q[1026:256]};
+            regB_Q <= (muxB_sel == 0) ? in_b : {256'b0,regB_Q[1026:256]};
         end
     end 
 
 
-    reg [127:0]     adder_a;
-    reg [127:0]     adder_b;
+    reg [255:0]     adder_a;
+    reg [255:0]     adder_b;
     reg             adder_cin;
-    wire[127:0]     adder_sum;
+    wire[255:0]     adder_sum;
     wire            adder_cout;
 
-    CSA_MUX #(128) CSA_MUX_inst (
+    CSA_MUX #(256) CSA_MUX_inst (
         .a(adder_a),
         .b(adder_b),
         .cin(adder_cin),
@@ -42,7 +42,7 @@ module mpadder(
         .cout(adder_cout)
     );
     
-    reg [127:0]     result_tmp;
+    reg [255:0]     result_tmp;
     reg             carry_out;  
     wire            carry_in; 
     
@@ -59,13 +59,13 @@ module mpadder(
             end
         else begin
                 if (subtract == 0) begin 
-                    adder_a   <= regA_Q[127:0];
-                    adder_b   <= regB_Q[127:0];
+                    adder_a   <= regA_Q[255:0];
+                    adder_b   <= regB_Q[255:0];
                     adder_cin <= carry_in;
                 end 
                 else begin
-                    adder_a   <= regA_Q[127:0];
-                    adder_b   <= ~regB_Q[127:0];
+                    adder_a   <= regA_Q[255:0];
+                    adder_b   <= ~regB_Q[255:0];
                     if(state == 3'd1) 
                         adder_cin <= 1'd1;
                     else 
@@ -93,7 +93,7 @@ module mpadder(
                 end
                 else begin
                     regDone <= 0;
-                    if (regResult_en)  regResult <= {result_tmp, regResult[1027:128]};
+                    if (regResult_en)  regResult <= {result_tmp, regResult[1027:256]};
                     else regResult <= regResult;
                 end
             end
@@ -201,7 +201,7 @@ module mpadder(
             
             3'd2: // Add_Lower state
             begin
-                if(regCnt_Q == 8)  // 1024/128=8
+                if(regCnt_Q == 4)  // 1024/256=4  !!!!!!!!!!!!!!!!!!!!!!!!!!!NEED TO BE CHANGED EVERY TIME WHEN MODIFY THE SIZE OF INNDER ADDER!!!!!!!
                     nextstate <= 3'd3;
                 else
                     nextstate <= 3'd2;  
