@@ -1,0 +1,46 @@
+module CLA_32b_LOOP#(
+    parameter   M = 32 )
+    (
+    input   wire [M-1:0] a,
+    input   wire [M-1:0] b,
+    input   wire cin,
+    output  wire [M-1:0] sum,
+    output  wire cout 
+    );
+    
+    wire [M-1:0] P, G;
+    wire [M:0] C;
+
+    // instantiate the first PFA
+    assign C[0] = cin;
+    
+    genvar i;
+    generate
+        for (i = 0; i < M; i = i + 1) begin : gen_cla
+            if (i == 0) begin
+                partial_full_adder pfa_inst(
+                    .a(a[i]),
+                    .b(b[i]),
+                    .cin(C[i]),
+                    .sum(sum[i]),
+                    .P(P[i]),
+                    .G(G[i])
+                );
+            end else begin
+                assign C[i] = G[i-1] | (P[i-1] & C[i-1]);
+                partial_full_adder pfa_inst(
+                    .a(a[i]),
+                    .b(b[i]),
+                    .cin(C[i]),
+                    .sum(sum[i]),
+                    .P(P[i]),
+                    .G(G[i])
+                );
+            end
+        end
+    endgenerate
+
+    // generate the carry-out signal
+    assign cout = G[M-1] | (P[M-1] & C[M-1]);
+
+endmodule
