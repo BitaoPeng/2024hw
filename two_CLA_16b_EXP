@@ -1,0 +1,18 @@
+module two_CLA_16b_EXP#(
+    parameter   N = 32 )
+    (
+    input   wire [2*M-1:0] a,
+    input   wire [2*M-1:0] b,
+    input   wire cin,
+    output  wire [2*M-1:0] sum,
+    output  wire cout 
+    );
+
+    localparam M = N/2;
+
+    wire c_mid;
+
+    CLA_16b_EXP#(16) cla_inst_1(a[M-1:0], b[M-1:0], cin, sum[M-1:0], c_mid);
+    CLA_16b_EXP#(16) cla_inst_2(a[2*M-1:M], b[2*M-1:M], c_mid, sum[2*M-1:M], cout);
+endmodule
+
