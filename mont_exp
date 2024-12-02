@@ -15,7 +15,7 @@ module mont_exp(
     );
 
 // Intermediate register         
-reg [1023:0] R_mod_M, R2_mod_M, x, x_tilde, e, m, A;
+reg [1023:0] R_mod_M, R2_mod_M, x, x_tilde, e, A;
 reg [9:0] i;              // Loop index (since n = 1024, we need 10 bits to count to 1024)
 
 reg [9:0] tao;            // bit length of e
@@ -30,14 +30,15 @@ always @(*) begin
     end
 end
 
+reg [1023:0] mont_in_m; // modulus is shared by 2 mont_multiplication
 
 reg mont_start1;
-reg [1023:0] mont_in_a1, mont_in_b1, mont_in_m1;
+reg [1023:0] mont_in_a1, mont_in_b1;
 wire [1023:0] mont_result1;
 wire mont_done1;
 
 reg mont_start2;
-reg [1023:0] mont_in_a2, mont_in_b2, mont_in_m2;
+reg [1023:0] mont_in_a2, mont_in_b2;
 wire [1023:0] mont_result2;
 wire mont_done2;
 
@@ -49,7 +50,7 @@ montgomery mont_instance_1(
 .start(mont_start1),
 .in_a(mont_in_a1),
 .in_b(mont_in_b1),
-.in_m(mont_in_m1),
+.in_m(mont_in_m),
 .result(mont_result1),
 .done(mont_done1)
 );
@@ -60,7 +61,7 @@ montgomery mont_instance_2(
 .start(mont_start2),
 .in_a(mont_in_a2),
 .in_b(mont_in_b2),
-.in_m(mont_in_m2),
+.in_m(mont_in_m),
 .result(mont_result2),
 .done(mont_done2)
 );
@@ -148,20 +149,18 @@ end
 always @(posedge clk) begin 
     if (~resetn) begin
         i <= 0;
+        mont_in_m <= 0;
         mont_in_a1 <= 0;
         mont_in_b1 <= 0;
-        mont_in_m1 <= 0;
         mont_start1 <= 0;
         mont_in_a2 <= 0;
         mont_in_b2 <= 0;
-        mont_in_m2 <= 0;
         mont_start2 <= 0;
         R_mod_M <= 0;
         R2_mod_M <= 0;
         x <= 0;
         x_tilde <= 0;
         e <= 0;
-        m <= 0;
         A <= 0;
         mont_done1_flag <= 0;
         mont_done2_flag <= 0;
@@ -170,20 +169,18 @@ always @(posedge clk) begin
         case (current_state)
             IDLE: begin
                 i <= 0;
+                mont_in_m <= 0;
                 mont_in_a1 <= 0;
                 mont_in_b1 <= 0;
-                mont_in_m1 <= 0;
                 mont_start1 <= 0;
                 mont_in_a2 <= 0;
                 mont_in_b2 <= 0;
-                mont_in_m2 <= 0;
                 mont_start2 <= 0;
                 R_mod_M <= 0;
                 R2_mod_M <= 0;
                 x <= 0;
                 x_tilde <= 0;
                 e <= 0;
-                m <= 0;
                 A <= 0;
                 mont_done1_flag <= 0;
                 mont_done2_flag <= 0;
@@ -193,9 +190,7 @@ always @(posedge clk) begin
                 R2_mod_M <= in_R2_mod_M;
                 x <= in_x;
                 e <= in_e;
-                m <= in_m;
-                mont_in_m1 <= in_m;
-                mont_in_m2 <= in_m;  // !!!!!!!!! mont_in_m1 and mont_in_m2 can be shared
+                mont_in_m <= in_m;
             end
             REG_TO_MONT: begin 
                 mont_in_a1 <= x;
