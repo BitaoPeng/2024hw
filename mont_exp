@@ -1,16 +1,16 @@
 `timescale 1ns / 1ps
 
 
-module mont_exp(
+module mont_exp( 
   input           clk,
   input           resetn,
   input           start,
-  input  [1023:0] in_R_mod_M,  
-  input  [1023:0] in_R2_mod_M,  
   input  [1023:0] in_x,  // message
   input  [1023:0] in_e,  // encrytion exponent
-  input  [1023:0] in_m,  // message
-  output [1023:0] result,
+  input  [1023:0] in_m,  // modulus
+  input  [1023:0] in_R_mod_M,  
+  input  [1023:0] in_R2_mod_M,  
+  output wire [1023:0] result,
   output          done
     );
 
