@@ -33,9 +33,6 @@ reg [1026:0] adder_in_a, adder_in_b;
 wire [1027:0] adder_result;
 wire adder_done;
 
-// reg [1:0] multi_step; 
-
-parameter n = 1024;
 
 
 // Adder module instance
@@ -50,6 +47,7 @@ mpadder mpadder_instance(
 .done(adder_done)
 );
 
+parameter n = 1024;
 
 // State Definition
 localparam IDLE                = 5'd0;

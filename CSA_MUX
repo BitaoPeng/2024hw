@@ -9,7 +9,7 @@ module CSA_MUX #(
     
     // N = 512, M = 32, N/M = 16 = m blocks of M-bit CLA
     // in total (N/M -1) = 15 = m-1 MUX each for sum and carry
-    localparam  M = 16;
+    localparam  M = 16; //!!!!!!!!!!!!!!!!!!!!!cannot change M to other numbers, since CLA_EXP is of fixed size: 16-bit
     localparam  m = N/M;
     
     // respectively the intermediate mux_c and mux_sum
