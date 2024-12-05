@@ -20,8 +20,7 @@ module montgomery(
   // Dear Students: This always block was added to ensure the tool doesn't
   // trim away the montgomery module. Feel free to remove this block.
 
-// Intermediate register         
-reg [1023:0] A, B, M;
+// Intermediate register   
 reg [1027:0] C; 
 reg [1027:0] twoB, threeB, twoM, threeM; 
 reg [10:0] i;              // Loop index (since n = 1024, we need 11 bits to count to 1024)
@@ -33,6 +32,9 @@ reg [1026:0] adder_in_a, adder_in_b;
 wire [1027:0] adder_result;
 wire adder_done;
 
+// reg [1:0] multi_step; 
+
+parameter n = 1024;
 
 
 // Adder module instance
@@ -47,7 +49,6 @@ mpadder mpadder_instance(
 .done(adder_done)
 );
 
-parameter n = 1024;
 
 // State Definition
 localparam IDLE                = 5'd0;
@@ -126,7 +127,7 @@ always @(*) begin
         end
         ACCUMULATE: begin
             // adder_start = 0;
-            if (A[i+1 -:2] != 0)
+            if (in_a[i+1 -:2] != 0)
                 next_state = WAIT_MULTIPLIER;
             else
                 next_state = CONDITIONAL_UPDATE;
@@ -139,9 +140,9 @@ always @(*) begin
         end 
         CONDITIONAL_UPDATE: begin     
             // adder_start = 0;     
-            if ((C[1:0] == 2'b01 && M[1:0] == 2'b01) || (C[1:0] == 2'b11 && M[1:0] == 2'b11)
-             || (C[1:0] == 2'b10 && M[1:0] == 2'b01) || (C[1:0] == 2'b10 && M[1:0] == 2'b11)
-             || (C[1:0] == 2'b11 && M[1:0] == 2'b01) || (C[1:0] == 2'b01 && M[1:0] == 2'b11))
+            if ((C[1:0] == 2'b01 && in_m[1:0] == 2'b01) || (C[1:0] == 2'b11 && in_m[1:0] == 2'b11)
+             || (C[1:0] == 2'b10 && in_m[1:0] == 2'b01) || (C[1:0] == 2'b10 && in_m[1:0] == 2'b11)
+             || (C[1:0] == 2'b11 && in_m[1:0] == 2'b01) || (C[1:0] == 2'b01 && in_m[1:0] == 2'b11))
                 next_state = WAIT_CONST_MULTIPLIER;
             else
                 next_state = DIVIDE_BY_4;
@@ -194,9 +195,6 @@ always @(posedge clk) begin
         adder_in_b <= 0;
         subtract <= 0;
         adder_start <= 0;
-        A <= 0;
-        B <= 0;
-        M <= 0;
         twoB <= 0;
         threeB <= 0;
         twoM <= 0;
@@ -211,31 +209,25 @@ always @(posedge clk) begin
                 adder_in_b <= 0;
                 subtract <= 0;
                 adder_start <= 0;
-                A <= 0;
-                B <= 0;
-                M <= 0;
                 twoB <= 0;
                 threeB <= 0;
                 twoM <= 0;
                 threeM <= 0;
             end
             INITIALIZE: begin 
-                A <= in_a;
-                B <= in_b;
-                M <= in_m;
             end
             INIT_MULT_B0: begin 
                 adder_start <= 1;
                 subtract <= 0;
-                adder_in_a <= B;
-                adder_in_b <= B;
+                adder_in_a <= in_b;
+                adder_in_b <= in_b;
             end
             WAIT_MULT_B0: begin
                 adder_start <= 0;
                 if (adder_done) begin 
                     twoB <= adder_result;
                     adder_in_a <= adder_result;
-                    adder_in_b <= B;
+                    adder_in_b <= in_b;
                     subtract <= 0;
                     adder_start <= 1;
                 end
@@ -248,15 +240,15 @@ always @(posedge clk) begin
             INIT_MULT_M0: begin 
                 adder_start <= 1;
                 subtract <= 0;
-                adder_in_a <= M;
-                adder_in_b <= M;
+                adder_in_a <= in_m;
+                adder_in_b <= in_m;
             end
             WAIT_MULT_M0: begin
                 adder_start <= 0;
                 if (adder_done) begin 
                     twoM <= adder_result;
                     adder_in_a <= adder_result;
-                    adder_in_b <= M;
+                    adder_in_b <= in_m;
                     subtract <= 0;
                     adder_start <= 1;
                 end
@@ -269,12 +261,12 @@ always @(posedge clk) begin
             ACCUMULATE: begin
                 subtract <= 0;
                 adder_in_a <= C;
-                if (A[i+1 -:2] == 0) adder_in_b <= 0;
+                if (in_a[i+1 -:2] == 0) adder_in_b <= 0;
                 else begin 
                     adder_start <= 1;
-                    if (A[i+1 -:2] == 1) adder_in_b <= B;
-                    else if (A[i+1 -:2] == 2) adder_in_b <= twoB;
-                    else if (A[i+1 -:2] == 3) adder_in_b <= threeB;
+                    if (in_a[i+1 -:2] == 1) adder_in_b <= in_b;
+                    else if (in_a[i+1 -:2] == 2) adder_in_b <= twoB;
+                    else if (in_a[i+1 -:2] == 3) adder_in_b <= threeB;
                 end
                     
             end
@@ -286,16 +278,16 @@ always @(posedge clk) begin
             CONDITIONAL_UPDATE: begin
                 subtract <= 0;
                 adder_in_a <= C[1026:0];
-                if ((C[1:0] == 2'b01 && M[1:0] == 2'b01) || (C[1:0] == 2'b11 && M[1:0] == 2'b11)) begin
+                if ((C[1:0] == 2'b01 && in_m[1:0] == 2'b01) || (C[1:0] == 2'b11 && in_m[1:0] == 2'b11)) begin
                     adder_in_b <= threeM;
                     adder_start <= 1;
                 end
-                else if ((C[1:0] == 2'b10 && M[1:0] == 2'b01) || (C[1:0] == 2'b10 && M[1:0] == 2'b11)) begin
+                else if ((C[1:0] == 2'b10 && in_m[1:0] == 2'b01) || (C[1:0] == 2'b10 && in_m[1:0] == 2'b11)) begin
                         adder_in_b <= twoM;
                         adder_start <= 1;
                     end
-                    else if ((C[1:0] == 2'b11 && M[1:0] == 2'b01) || (C[1:0] == 2'b01 && M[1:0] == 2'b11)) begin
-                            adder_in_b <= M;
+                    else if ((C[1:0] == 2'b11 && in_m[1:0] == 2'b01) || (C[1:0] == 2'b01 && in_m[1:0] == 2'b11)) begin
+                            adder_in_b <= in_m;
                             adder_start <= 1;
                         end
                          else 
@@ -317,7 +309,7 @@ always @(posedge clk) begin
                 adder_start <= 1;
                 subtract <= 1;
                 adder_in_a <= C;
-                adder_in_b <= M;
+                adder_in_b <= in_m;
             end
             NORMALIZE: begin
                 adder_start <= 0;
@@ -326,7 +318,7 @@ always @(posedge clk) begin
                         adder_start <= 1;
                         subtract <= 1;
                         adder_in_a <= C;
-                        adder_in_b <= M;
+                        adder_in_b <= in_m;
                     end
                 end
             end
