@@ -15,8 +15,9 @@ module mont_exp(
     );
 
 // Intermediate register         
-reg [1023:0]  x_tilde, A;
-reg [9:0] i;              // Loop index (since n = 1024, we need 10 bits to count to 1024)
+reg [1023:0]  e, x_tilde, A;
+reg [9:0]     i;              // Loop index (since n = 1024, we need 10 bits to count to 1024)
+reg           e_index_bit;
 
 reg [9:0] tao;            // bit length of e
 
@@ -73,9 +74,10 @@ localparam REG_TO_MONT         = 4'd2;
 localparam WAIT_REG_TO_MONT    = 4'd3;
 localparam ITERATION           = 4'd4;
 localparam WAIT_ITERATION      = 4'd5;
-localparam MONT_TO_REG         = 4'd6;
-localparam WAIT_MONT_TO_REG    = 4'd7;
-localparam DONE                = 4'd8;
+localparam UPDATE_INDEX_BIT    = 4'd6;
+localparam MONT_TO_REG         = 4'd7;
+localparam WAIT_MONT_TO_REG    = 4'd8;
+localparam DONE                = 4'd9;
 
 
 
@@ -124,10 +126,13 @@ always @(*) begin
             if(mont_done1_flag && mont_done2_flag && i == tao + 1)
                 next_state = MONT_TO_REG;
             else if (mont_done1_flag && mont_done2_flag)
-                    next_state = ITERATION;
+                    next_state = UPDATE_INDEX_BIT;
                 else 
                     next_state = WAIT_ITERATION;
         end   
+        UPDATE_INDEX_BIT: begin 
+            next_state = ITERATION;
+        end
         MONT_TO_REG: begin 
             next_state = WAIT_MONT_TO_REG;
         end  
@@ -154,6 +159,8 @@ always @(posedge clk) begin
         mont_in_a2 <= 0;
         mont_in_b2 <= 0;
         mont_start2 <= 0;
+        e <= 0;
+        e_index_bit <= 0;
         x_tilde <= 0;
         A <= 0;
         mont_done1_flag <= 0;
@@ -169,14 +176,18 @@ always @(posedge clk) begin
                 mont_in_a2 <= 0;
                 mont_in_b2 <= 0;
                 mont_start2 <= 0;
+                e <= 0;
+                e_index_bit <= 0;
                 x_tilde <= 0;
                 A <= 0;
                 mont_done1_flag <= 0;
                 mont_done2_flag <= 0;
             end
             INITIALIZE: begin 
+                e <= in_e;
             end
             REG_TO_MONT: begin 
+                e_index_bit <= e[tao];
                 mont_in_a1 <= in_x;
                 mont_in_b1 <= in_R2_mod_M;
                 mont_start1 <= 1;
@@ -202,7 +213,7 @@ always @(posedge clk) begin
                 mont_start1 <= 1;
                 mont_done1_flag <= 0;
                 mont_done2_flag <= 0;
-                if(in_e[tao-i] == 1) begin
+                if(e_index_bit == 1) begin
                     mont_in_a2 <= x_tilde;
                     mont_in_b2 <= x_tilde;
                     mont_start2 <= 1;
@@ -213,11 +224,12 @@ always @(posedge clk) begin
                     mont_start2 <= 1;
                 end
                 i <= i + 1;
+                e <= e << 1;                
             end   
             WAIT_ITERATION: begin
                 mont_start1 <= 0;
                 mont_start2 <= 0;
-                if(in_e[tao-(i-1)] == 1) begin
+                if(e_index_bit == 1) begin
                     if(mont_done1) begin
                         A <= mont_result1;
                         mont_done1_flag <= 1;
@@ -236,8 +248,10 @@ always @(posedge clk) begin
                         A <= mont_result2;
                         mont_done2_flag <= 1;
                     end
-                end
-                
+                end 
+            end
+            UPDATE_INDEX_BIT: begin 
+                e_index_bit <= e[tao];
             end
             MONT_TO_REG: begin 
                 mont_in_a1 <= A;
